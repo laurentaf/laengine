@@ -18,7 +18,6 @@ from laengine.brasfoot.engine import gerar_tabela_jogos, simular_partida, calcul
 from laengine.brasfoot.models import Team, Player, Match, Standings
 
 try:
-    from mcp.server.models import InitializationOptions
     import mcp.types as types
     from mcp.server import Server
     import mcp.server.stdio
@@ -180,6 +179,11 @@ if HAS_MCP:
     async def handle_list_tools():
         return [
             types.Tool(
+                name="health",
+                description="Check server health status",
+                inputSchema={"type": "object", "properties": {}, "required": []},
+            ),
+            types.Tool(
                 name="generate_seed",
                 description="Generate 10 Brazilian football teams with synthetic players",
                 inputSchema={"type": "object", "properties": {}, "required": []},
@@ -220,6 +224,8 @@ if HAS_MCP:
     
     @mcp_server.call_tool()
     async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
+        if name == "health":
+            return [types.TextContent(type="text", text='{"status": "ok", "server": "laengine"}')]
         result = engine.handle_tool(name, arguments or {})
         return [types.TextContent(type="text", text=result)]
     
@@ -227,10 +233,7 @@ if HAS_MCP:
         async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
             await mcp_server.run(
                 read_stream, write_stream,
-                InitializationOptions(
-                    server_name="laengine",
-                    server_version="0.1.0",
-                )
+                mcp_server.create_initialization_options(),
             )
 
 
